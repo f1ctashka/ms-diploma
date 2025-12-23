@@ -3,6 +3,21 @@ from pydantic import BaseModel
 from uav_service.logic.models import Coordinates, Coordinates3D, Drone
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class TokenPair(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
+
+
 class UavComputeRequest(BaseModel):
     user: Coordinates
     base: Coordinates3D | None = None

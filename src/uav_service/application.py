@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from uav_service.views.auth import router as auth_router
 from uav_service.views.routers import router as uav_router
 
 
@@ -23,5 +24,6 @@ def make_fastapi_app(
     )
 
     app.include_router(uav_router, prefix=base_api_path)
+    app.include_router(auth_router, prefix=base_api_path)
 
     return app

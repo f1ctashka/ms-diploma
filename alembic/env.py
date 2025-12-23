@@ -2,11 +2,9 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SRC_DIR = BASE_DIR / "src"
@@ -28,7 +26,6 @@ target_metadata = Base.metadata
 
 # enable sqlite foreign keys
 import uav_service.db.sqlite  # noqa
-
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

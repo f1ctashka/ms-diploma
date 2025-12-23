@@ -1,15 +1,31 @@
-from typing import Iterable, Dict, List
 from datetime import datetime
+from typing import Dict, Iterable, List
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from uav_service.db.tables import (
-    User,
-    Configuration,
-    Simulation,
-    Drone,
-    Trajectory,
-)
+from uav_service.auth.security import hash_password
+from uav_service.db.tables import (Configuration, Drone, Simulation,
+                                   Trajectory, User)
+
+
+def create_user(
+    db: Session,
+    *,
+    email: str,
+    password: str,
+) -> User | None:
+    try:
+        user = User(
+            email=email,
+            hashed_password=hash_password(password),
+        )
+        db.add(user)
+        db.commit()
+    except IntegrityError:
+        return None
+    db.refresh(user)
+    return user
 
 
 def create_configuration(

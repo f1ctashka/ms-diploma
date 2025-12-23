@@ -15,6 +15,7 @@ class MiscSettings(BaseSettings):
     title: str = "Planing service"
     environment: str
     base_api_path: str = "/api/uav-service"
+    secret_key: str
 
 
 class Settings(BaseSettings):

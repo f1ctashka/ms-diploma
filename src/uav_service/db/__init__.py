@@ -1,8 +1,1 @@
-from .tables import (
-    Base,
-    User,
-    Configuration,
-    Simulation,
-    Drone,
-    Trajectory,
-)
+from .tables import Base, Configuration, Drone, Simulation, Trajectory, User

@@ -18,6 +18,9 @@ pydantic-settings = "^2.11.0"
 numpy = "^2.3.4"
 sqlalchemy = "^2.0.45"
 alembic = "^1.17.2"
+passlib = {extras = ["argon2"], version = "^1.7.4"}
+python-jose = {extras = ["cryptography"], version = "^3.5.0"}
+bcrypt = "<4.1"
 
 [tool.poetry.group.lint.dependencies]
 mypy = "^1.18.2"
