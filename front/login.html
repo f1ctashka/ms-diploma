@@ -117,27 +117,53 @@
 </div>
 
 <script>
-    document.getElementById("loginBtn").onclick = () => {
+    const API_BASE = "http://localhost:8000";
+
+    document.getElementById("loginBtn").onclick = async () => {
         const email = document.getElementById("email").value.trim();
-        const pass  = document.getElementById("password").value.trim();
+        const password = document.getElementById("password").value.trim();
         const errorBox = document.getElementById("errorBox");
 
-        // MOCK LOGIN: тільки admin / admin
-        if (email !== "admin" || pass !== "admin") {
+        errorBox.style.display = "none";
+
+        if (!email || !password) {
+            errorBox.innerText = "Please enter email and password";
             errorBox.style.display = "block";
             return;
         }
 
-        // Якщо все правильно — ховаємо помилку і логінимось
-        errorBox.style.display = "none";
+        try {
+            const res = await fetch(`${API_BASE}/api/uav-service/auth/login/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password
+                })
+            });
 
-        // Записуємо в localStorage
-        localStorage.setItem("uav_user", "admin");
+            if (!res.ok) {
+                throw new Error("Invalid credentials");
+            }
 
-        // Переходимо в основний інтерфейс
-        window.location.href = "index.html";
+            const data = await res.json();
+
+            // 🔐 Зберігаємо токени
+            localStorage.setItem("access_token", data.access_token);
+            localStorage.setItem("refresh_token", data.refresh_token);
+
+            // 👉 редірект
+            window.location.href = "index.html";
+
+        } catch (err) {
+            errorBox.innerText = "Invalid login or password";
+            errorBox.style.display = "block";
+        }
     };
 </script>
+
 
 </body>
 </html>

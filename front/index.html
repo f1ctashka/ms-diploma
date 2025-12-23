@@ -607,7 +607,7 @@
 
 <!-- AUTH CHECK -->
 <script>
-    const storedUserInit = localStorage.getItem("uav_user");
+    const storedUserInit = localStorage.getItem("access_token");
     if (!storedUserInit) {
         window.location.href = "login.html";
     }
@@ -795,7 +795,7 @@
 </div>
 
 <script>
-    const API_URL = "http://localhost:8000/api/uav-service/uav/compute/";
+    const API_BASE = "http://localhost:8000/api/uav-service/";
 
     // Canvas & controls
     const canvas = document.getElementById("canvas");
@@ -845,6 +845,32 @@
     const storedUser = localStorage.getItem("uav_user") || "admin";
     userNameSpan.textContent = storedUser;
     userAvatar.textContent = storedUser.charAt(0).toUpperCase();
+
+    function getAccessToken() {
+        return localStorage.getItem("access_token");
+    }
+
+    async function authFetch(url, options = {}) {
+        const token = getAccessToken();
+
+        const headers = {
+            ...(options.headers || {}),
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json"
+        };
+
+        const res = await fetch(`${API_BASE}${url}`, {
+            ...options,
+            headers
+        });
+
+        // access token expired → тут можна додати refresh (нижче)
+        if (res.status === 401) {
+            throw new Error("Unauthorized");
+        }
+
+        return res;
+    }
 
     const SCALE = 4;
     const OFFSET_X = canvas.width / 2;
@@ -1421,9 +1447,8 @@
         };
 
         try {
-            const res = await fetch(API_URL, {
+            const res = await authFetch("uav/compute/", {
                 method: "POST",
-                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             });
 
