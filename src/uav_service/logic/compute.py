@@ -81,30 +81,50 @@ def calculate_bridge_targets(base, user, max_drone_spacing, num_available_drones
 
 
 # ---------- DRONE ASSIGNMENT ----------
+def projection_factor_on_segment(p: np.ndarray, a: np.ndarray, b: np.ndarray) -> float:
+    """
+    Returns parametric position t of point p projected onto segment a→b.
+    t < 0   → before base
+    t = 0   → at base
+    t = 1   → at user
+    t > 1   → beyond user
+    """
+    ab = b - a
+    ab_len_sq = float(np.dot(ab, ab))
+
+    if ab_len_sq < 1e-12:
+        return 0.0
+
+    return float(np.dot(p - a, ab) / ab_len_sq)
 
 
 def assign_drones_to_targets(drones, bridge_targets, base, user):
-    """Pick drones closest to line, then sort along trajectory."""
     if not bridge_targets:
         return []
 
+    # 1. Select drones closest to the segment
     drones_sorted = sorted(
         drones, key=lambda d: drone_distance_to_bridge_segment(d, base, user)
     )
-
     selected = drones_sorted[: len(bridge_targets)]
 
+    # 2. Order drones ALONG the base→user segment
     drones_ordered = sorted(
         selected,
-        key=lambda d: np.linalg.norm(
-            np.array([d.coordinates.x, d.coordinates.y, d.coordinates.z]) - base
+        key=lambda d: projection_factor_on_segment(
+            np.array([d.coordinates.x, d.coordinates.y, d.coordinates.z], float),
+            base,
+            user,
         ),
     )
 
-    targets_ordered = sorted(bridge_targets, key=lambda t: np.linalg.norm(t - base))
+    # 3. Order targets along the same segment
+    targets_ordered = sorted(
+        bridge_targets,
+        key=lambda t: projection_factor_on_segment(t, base, user),
+    )
 
     return list(zip(drones_ordered, targets_ordered))
-
 
 # ---------- DH TRAJECTORY ----------
 
