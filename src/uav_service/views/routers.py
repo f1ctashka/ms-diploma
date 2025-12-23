@@ -1,10 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from uav_service.logic.compute import (
     compute_drone_bridge_positions,
 )
 from uav_service.logic.models import Coordinates3D, Drone
 from uav_service.views.models import UavComputeRequest, UavComputeResponse
+from uav_service.db.logic import persist_full_simulation
+from uav_service.db.dependencies import get_db
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/uav")
 
@@ -13,6 +16,7 @@ router = APIRouter(prefix="/uav")
 async def start(
     *,
     request_data: UavComputeRequest,
+    db: Session = Depends(get_db),
 ) -> UavComputeResponse:
     base_coordinates = request_data.base or Coordinates3D(x=0, y=0, z=0)
     drones = request_data.initial_drone_positions or [
@@ -29,8 +33,22 @@ async def start(
         drones=drones,
         step_size=request_data.step_size,
     )
+
+    simulation_id = persist_full_simulation(
+        session=db,
+        user_id=1,
+        base=base_coordinates.model_dump(),
+        user={**request_data.user.model_dump(), "z": 0},
+        algorithm_params={"max_distance": 10, "step_size": request_data.step_size},
+        drones=[d.model_dump() for d in drones],
+        trajectories={
+            k: [i.model_dump() for i in v] for k, v in drone_positions.items()
+        },
+    )
+
     return UavComputeResponse(
         base_coordinates=base_coordinates,
         user_coordinates=request_data.user,
         drone_positions=drone_positions,
+        simulation_id=simulation_id,
     )

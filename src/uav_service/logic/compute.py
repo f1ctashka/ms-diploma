@@ -11,9 +11,9 @@ from uav_service.logic.utils import dh_transform
 # ---------- HELPERS ----------
 def drone_distance_to_bridge_segment(drone, base, user):
     # Convert everything to proper vectors
-    p = np.array([drone.coordinates.x,
-                  drone.coordinates.y,
-                  drone.coordinates.z], dtype=float)
+    p = np.array(
+        [drone.coordinates.x, drone.coordinates.y, drone.coordinates.z], dtype=float
+    )
 
     a = np.array([base[0], base[1], base[2]], dtype=float)
     b = np.array([user[0], user[1], user[2]], dtype=float)
@@ -33,6 +33,7 @@ def drone_distance_to_bridge_segment(drone, base, user):
 
     closest_point = a + t * ab
     return float(np.linalg.norm(p - closest_point))
+
 
 # def drone_distance_to_bridge_line(drone, base, user):
 #     p = np.array([drone.coordinates.x, drone.coordinates.y, drone.coordinates.z])
@@ -54,6 +55,7 @@ def angle_deg(a: np.ndarray, b: np.ndarray) -> float:
 
 
 # ---------- TARGET GENERATION ----------
+
 
 def calculate_bridge_targets(base, user, max_drone_spacing, num_available_drones):
     direction = user - base
@@ -80,6 +82,7 @@ def calculate_bridge_targets(base, user, max_drone_spacing, num_available_drones
 
 # ---------- DRONE ASSIGNMENT ----------
 
+
 def assign_drones_to_targets(drones, bridge_targets, base, user):
     """Pick drones closest to line, then sort along trajectory."""
     if not bridge_targets:
@@ -105,26 +108,25 @@ def assign_drones_to_targets(drones, bridge_targets, base, user):
 
 # ---------- DH TRAJECTORY ----------
 
+
 def generate_dh_trajectory_simple(
-        start: np.ndarray,
-        target: np.ndarray,
-        user: np.ndarray,
-        step_size: float,
-        initial_yaw_deg: float
+    start: np.ndarray,
+    target: np.ndarray,
+    user: np.ndarray,
+    step_size: float,
+    initial_yaw_deg: float,
 ):
     movement = target - start
     dist = np.linalg.norm(movement)
 
     # if not moving
     if dist < 1e-6:
-        return [Coordinates3D(
-            x=start[0], y=start[1], z=start[2], yaw=initial_yaw_deg
-        )]
+        return [Coordinates3D(x=start[0], y=start[1], z=start[2], yaw=initial_yaw_deg)]
 
     steps = max(3, math.ceil(dist / step_size) + 1)
 
     dx, dy, dz = movement
-    xy = math.sqrt(dx*dx + dy*dy)
+    xy = math.sqrt(dx * dx + dy * dy)
 
     move_yaw_rad = math.atan2(dy, dx) if xy > 1e-6 else 0.0
     pitch = math.atan2(dz, xy) if xy > 1e-6 else 0.0
@@ -142,7 +144,7 @@ def generate_dh_trajectory_simple(
 
         if k == 0:
             pos = start.copy()
-            yaw = initial_yaw_deg   # Use payload yaw
+            yaw = initial_yaw_deg  # Use payload yaw
         else:
             a = step_forward * k
             d = step_vertical * k
@@ -154,12 +156,11 @@ def generate_dh_trajectory_simple(
             # From step 1 → face user
             yaw = angle_deg(pos, user)
 
-        trajectory.append(Coordinates3D(
-            x=float(pos[0]),
-            y=float(pos[1]),
-            z=float(pos[2]),
-            yaw=float(yaw)
-        ))
+        trajectory.append(
+            Coordinates3D(
+                x=float(pos[0]), y=float(pos[1]), z=float(pos[2]), yaw=float(yaw)
+            )
+        )
 
     # Final correction
     trajectory[-1].x = target[0]
@@ -169,7 +170,9 @@ def generate_dh_trajectory_simple(
 
     return trajectory
 
+
 # ---------- MAIN PIPELINE ----------
+
 
 def compute_drone_positions(
     user_coordinates,
@@ -186,7 +189,9 @@ def compute_drone_positions(
     base = np.array([base_coordinates.x, base_coordinates.y, base_coordinates.z], float)
     user = np.array([user_coordinates.x, user_coordinates.y, 0.0], float)
 
-    bridge_targets = calculate_bridge_targets(base, user, max_drone_spacing, len(drones))
+    bridge_targets = calculate_bridge_targets(
+        base, user, max_drone_spacing, len(drones)
+    )
     assignments = assign_drones_to_targets(drones, bridge_targets, base, user)
 
     result = {}

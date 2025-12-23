@@ -14,3 +14,4 @@ class UavComputeResponse(BaseModel):
     base_coordinates: Coordinates3D
     user_coordinates: Coordinates
     drone_positions: dict[str, list[Coordinates3D]]
+    simulation_id: int
