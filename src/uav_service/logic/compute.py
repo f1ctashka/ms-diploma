@@ -3,6 +3,7 @@ from math import ceil
 from typing import Dict, List, Tuple
 
 import numpy as np
+from fastapi.exceptions import ValidationException
 
 from uav_service.logic.models import Coordinates, Coordinates3D, Drone
 from uav_service.logic.utils import dh_transform
@@ -65,6 +66,8 @@ def calculate_bridge_targets(base, user, max_drone_spacing, num_available_drones
         return []
 
     num_needed = max(1, ceil(dist / max_drone_spacing) - 1)
+    if num_available_drones < num_needed:
+        raise ValueError("Недостатня кілкість дронів для побудови мережі")
     num_use = min(num_needed, num_available_drones)
 
     targets = []

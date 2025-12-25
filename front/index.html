@@ -1452,12 +1452,12 @@
                 body: JSON.stringify(payload)
             });
 
+            responseData = await res.json();
             if (!res.ok) {
-                alert("Ошибка ответа сервера: " + res.status);
+                alert(responseData.detail);
                 return;
             }
 
-            responseData = await res.json();
 
             for (const label of Object.keys(responseData.drone_positions)) {
                 if (!droneColorMap[label]) {
@@ -1484,7 +1484,7 @@
             drawFrame();
         } catch (e) {
             console.error("Fetch error:", e);
-            alert("Не удалось обратиться к backend. Проверь, что FastAPI запущен.");
+            alert(e);
         }
     }
 

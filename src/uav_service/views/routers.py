@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from uav_service.auth.dependencies import get_current_user
@@ -28,12 +28,15 @@ async def start(
         Drone(label="UAV_5", coordinates=Coordinates3D(x=50, y=25, z=18)),
     ]
 
-    drone_positions = compute_drone_bridge_positions(
-        user_coordinates=request_data.user,
-        base_coordinates=base_coordinates,
-        drones=drones,
-        step_size=request_data.step_size,
-    )
+    try:
+        drone_positions = compute_drone_bridge_positions(
+            user_coordinates=request_data.user,
+            base_coordinates=base_coordinates,
+            drones=drones,
+            step_size=request_data.step_size,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     simulation_id = persist_full_simulation(
         session=db,
