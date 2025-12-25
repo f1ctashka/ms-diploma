@@ -17,7 +17,7 @@ import RegisterPage from './components/RegisterPage';
 
 const API_URL = 'http://localhost:8000/api/uav-service/uav/compute/';
 
-// ------------------ AUTH HELPERS ------------------
+// ---------------- AUTH HELPERS ----------------
 const getAuthHeaders = () => {
   const token = localStorage.getItem('access_token');
   return {
@@ -26,18 +26,18 @@ const getAuthHeaders = () => {
   };
 };
 
-// ------------------ SIMULATION CONTEXT ------------------
+// ---------------- SIMULATION CONTEXT ----------------
 const SimulationContext = createContext();
 export const useSimulation = () => useContext(SimulationContext);
 
-// ======================================================
-// ======================== MAIN =========================
-// ======================================================
+// ====================================================
+// ======================== MAIN =======================
+// ====================================================
 function MainApp() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
 
-  // ------------------ PARAMS ------------------
+  // ---------------- PARAMS ----------------
   const [params, setParams] = useState({
     baseX: 0,
     baseY: 0,
@@ -49,14 +49,14 @@ function MainApp() {
     stepSize: 3.0,
   });
 
-  // ------------------ STATE ------------------
-  const [drones, setDrones] = useState([]);
-  const [trajectories, setTrajectories] = useState([]);
+  // ---------------- STATE ----------------
+  const [drones, setDrones] = useState([]);              // исходные дроны
+  const [trajectories, setTrajectories] = useState([]); // [{label,x,y,z,yaw}, ...] по шагам
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ------------------ AUTH CHECK ------------------
+  // ---------------- AUTH CHECK ----------------
   useEffect(() => {
     const token = localStorage.getItem('access_token');
     const storedUser = localStorage.getItem('uav_user');
@@ -75,14 +75,12 @@ function MainApp() {
     navigate('/login');
   };
 
-  // ------------------ COMPUTE ------------------
+  // ---------------- COMPUTE ----------------
   const handleRecalculate = async () => {
     if (!drones.length) {
       alert('Add at least one drone first.');
       return;
     }
-
-
 
     setIsLoading(true);
 
@@ -91,8 +89,8 @@ function MainApp() {
         user: { x: params.userX, y: params.userY },
         base: { x: params.baseX, y: params.baseY, z: params.baseZ },
         step_size: params.stepSize,
-        initial_drone_positions: drones.map((d, idx) => ({
-          label: `UAV${idx + 1}`,
+        initial_drone_positions: drones.map((d) => ({
+          label: d.label,
           coordinates: {
             x: d.x,
             y: d.y,
@@ -114,14 +112,13 @@ function MainApp() {
       }
 
       if (!resp.ok) {
-          if (resp.status === 400) {
-            const errData = await resp.json();
-            alert(errData.detail || 'Invalid request');
-            return;
-          }
-
-          throw new Error(`Server error: ${resp.status}`);
+        if (resp.status === 400) {
+          const err = await resp.json();
+          alert(err.detail || 'Invalid request');
+          return;
         }
+        throw new Error(`Server error: ${resp.status}`);
+      }
 
       const data = await resp.json();
 
@@ -136,7 +133,14 @@ function MainApp() {
           steps.push(
             labels.map((label) => {
               const track = data.drone_positions[label];
-              return track[Math.min(s, track.length - 1)];
+              const p = track[Math.min(s, track.length - 1)];
+              return {
+                label,
+                x: p.x,
+                y: p.y,
+                z: p.z,
+                yaw: p.yaw,
+              };
             })
           );
         }
@@ -152,23 +156,26 @@ function MainApp() {
     }
   };
 
-  // ------------------ DRONES ------------------
+  // ---------------- DRONES ----------------
   const handleAddDrone = (x, y) => {
     const colors = [
-      '#ef4444',
-      '#22c55e',
-      '#3b82f6',
-      '#eab308',
-      '#a855f7',
-      '#ec4899',
-      '#14b8a6',
-      '#f97316',
+      '#ef4444', '#22c55e', '#3b82f6', '#eab308',
+      '#a855f7', '#ec4899', '#14b8a6', '#f97316',
     ];
-    const color = colors[drones.length % colors.length];
+
+    const index = drones.length;
+    const color = colors[index % colors.length];
 
     setDrones((prev) => [
       ...prev,
-      { id: prev.length, x, y, yaw: 45, color },
+      {
+        id: index,
+        label: `UAV${index + 1}`,
+        x,
+        y,
+        yaw: Math.random() * 360,
+        color,
+      },
     ]);
   };
 
@@ -190,19 +197,23 @@ function MainApp() {
   const updateParam = (key, val) =>
     setParams((p) => ({ ...p, [key]: parseFloat(val) || 0 }));
 
-  // ------------------ DERIVED ------------------
+  // ---------------- DERIVED (ВАЖНО!) ----------------
+  // Сопоставление ТОЛЬКО по label → цвета больше не прыгают
   const currentDronesState = useMemo(() => {
     if (!trajectories.length || currentStep >= trajectories.length) {
       return drones;
     }
 
-    return trajectories[currentStep].map((stepDrone, idx) => ({
-      ...drones[idx],
-      ...stepDrone,
-    }));
+    return trajectories[currentStep].map((stepDrone) => {
+      const original = drones.find((d) => d.label === stepDrone.label);
+      return {
+        ...original,
+        ...stepDrone,
+      };
+    });
   }, [drones, trajectories, currentStep]);
 
-  // ------------------ ANIMATION ------------------
+  // ---------------- ANIMATION ----------------
   useEffect(() => {
     if (!isPlaying || !trajectories.length) return;
 
@@ -217,7 +228,7 @@ function MainApp() {
     return () => clearInterval(timer);
   }, [isPlaying, trajectories]);
 
-  // ------------------ CONTEXT ------------------
+  // ---------------- CONTEXT ----------------
   const contextValue = {
     params,
     updateParam,
@@ -254,9 +265,9 @@ function MainApp() {
   );
 }
 
-// ======================================================
-// ======================== ROUTER =======================
-// ======================================================
+// ====================================================
+// ======================== ROUTER =====================
+// ====================================================
 export default function App() {
   return (
     <Router>
